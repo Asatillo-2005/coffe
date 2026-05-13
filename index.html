@@ -736,6 +736,7 @@ const COFFEES = [
     steamOpacity:  0.45,
     steamColor:    0xfff0d8,
     cupTint:       0xf6f1e6,
+    art:           'crema',
   },
   {
     id: 'latte',
@@ -750,6 +751,7 @@ const COFFEES = [
     steamOpacity:  0.5,
     steamColor:    0xffffff,
     cupTint:       0xfaf6ec,
+    art:           'rosetta',
   },
   {
     id: 'cappuccino',
@@ -764,6 +766,7 @@ const COFFEES = [
     steamOpacity:  0.6,
     steamColor:    0xfff8ee,
     cupTint:       0xf8f2e6,
+    art:           'cocoa-dust',
   },
   {
     id: 'mocha',
@@ -778,6 +781,7 @@ const COFFEES = [
     steamOpacity:  0.55,
     steamColor:    0xffe4c0,
     cupTint:       0xfff0d8,
+    art:           'cocoa-swirl',
   },
   {
     id: 'americano',
@@ -792,6 +796,7 @@ const COFFEES = [
     steamOpacity:  0.55,
     steamColor:    0xffe8c8,
     cupTint:       0xffffff,
+    art:           'crema',
   },
 ];
 
@@ -817,14 +822,15 @@ const MENU = [
 const CoffeeScene = (() => {
   let scene, camera, renderer, canvas;
   let cupGroup;          // floats / parallax-rotates
-  let cupBody, liquid, foam, handle;
-  let liquidMat, foamMat, cupMat;
+  let cupOuter, cupInner, liquid, foam, foamArt, handle;
+  let liquidMat, foamMat, foamArtMat, cupMat, cupInnerMat;
+  let beans = [];
   let steamSprites = [];
   let steamMaterials = [];
   let mouseX = 0, mouseY = 0;
   let curRotY = 0, curRotX = 0;
 
-  // current animated material values (lerped over 60 frames)
+  // Lerp state (60 frames)
   let lerping = false;
   let lerpFrame = 0;
   const LERP_FRAMES = 60;
@@ -853,29 +859,35 @@ const CoffeeScene = (() => {
     steamOpacity: 0,
   };
 
-  /* ---------- radial gradient steam texture ---------- */
+  /* ---------- Soft radial-gradient steam puff ---------- */
   function makeSteamTexture() {
-    const c = document.createElement('canvas');
-    c.width = c.height = 128;
-    const ctx = c.getContext('2d');
-    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    g.addColorStop(0,   'rgba(255,255,255,0.85)');
-    g.addColorStop(0.3, 'rgba(255,255,255,0.45)');
-    g.addColorStop(0.6, 'rgba(255,255,255,0.18)');
-    g.addColorStop(1,   'rgba(255,255,255,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 128, 128);
-    return new THREE.CanvasTexture(c);
-  }
-
-  /* ---------- subtle ceramic noise normal map ---------- */
-  function makeCeramicNormal() {
     const c = document.createElement('canvas');
     c.width = c.height = 256;
     const ctx = c.getContext('2d');
-    const img = ctx.createImageData(256, 256);
+    // multiple soft blobs combined for natural cloud
+    for (let i = 0; i < 6; i++) {
+      const x = 128 + (Math.random() - 0.5) * 60;
+      const y = 128 + (Math.random() - 0.5) * 60;
+      const r = 50 + Math.random() * 40;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0,   'rgba(255,255,255,0.5)');
+      g.addColorStop(0.5, 'rgba(255,255,255,0.15)');
+      g.addColorStop(1,   'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, 256, 256);
+    }
+    const t = new THREE.CanvasTexture(c);
+    return t;
+  }
+
+  /* ---------- Subtle ceramic micro-noise normal ---------- */
+  function makeCeramicNormal() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 512;
+    const ctx = c.getContext('2d');
+    const img = ctx.createImageData(512, 512);
     for (let i = 0; i < img.data.length; i += 4) {
-      const n = 128 + (Math.random() - 0.5) * 6;
+      const n = 128 + (Math.random() - 0.5) * 8;
       img.data[i]     = n;
       img.data[i + 1] = n;
       img.data[i + 2] = 255;
@@ -884,43 +896,326 @@ const CoffeeScene = (() => {
     ctx.putImageData(img, 0, 0);
     const t = new THREE.CanvasTexture(c);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(2, 2);
+    t.repeat.set(3, 3);
     return t;
   }
 
-  /* ---------- ceramic cup profile via LatheGeometry ----------
-     Curved body, foot ring at bottom, flared rim at top.
-  ---------------------------------------------------------------- */
-  function buildCupGeometry() {
-    const pts = [];
-    // Foot ring (slightly wider base for stability)
-    pts.push(new THREE.Vector2(0.62, 0));      // foot outer edge
-    pts.push(new THREE.Vector2(0.66, 0.04));   // foot lip up
-    pts.push(new THREE.Vector2(0.58, 0.08));   // tuck inward (foot ring)
-    pts.push(new THREE.Vector2(0.60, 0.14));   // back out into body
-    // Curved body
-    pts.push(new THREE.Vector2(0.66, 0.30));
-    pts.push(new THREE.Vector2(0.72, 0.50));
-    pts.push(new THREE.Vector2(0.76, 0.70));
-    pts.push(new THREE.Vector2(0.78, 0.90));
-    // Flared rim
-    pts.push(new THREE.Vector2(0.83, 1.00));
-    pts.push(new THREE.Vector2(0.84, 1.03));
-    pts.push(new THREE.Vector2(0.82, 1.04));
-    return new THREE.LatheGeometry(pts, 96);
+  /* ---------- Wood grain table texture ---------- */
+  function makeWoodTexture() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 1024;
+    const ctx = c.getContext('2d');
+    // base gradient
+    const g = ctx.createLinearGradient(0, 0, 1024, 1024);
+    g.addColorStop(0, '#5a3520');
+    g.addColorStop(0.5, '#3a2014');
+    g.addColorStop(1, '#22120a');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 1024, 1024);
+    // long grain lines
+    for (let i = 0; i < 600; i++) {
+      ctx.strokeStyle = `rgba(${15 + Math.random() * 35},${8 + Math.random() * 18},5,${0.15 + Math.random() * 0.45})`;
+      ctx.lineWidth = 0.4 + Math.random() * 1.4;
+      ctx.beginPath();
+      const y = Math.random() * 1024;
+      ctx.moveTo(0, y);
+      let x = 0;
+      while (x < 1024) {
+        x += 5 + Math.random() * 12;
+        ctx.lineTo(x, y + Math.sin(x * 0.04 + i) * 6);
+      }
+      ctx.stroke();
+    }
+    // knots
+    for (let i = 0; i < 8; i++) {
+      const x = Math.random() * 1024;
+      const y = Math.random() * 1024;
+      const r = 8 + Math.random() * 22;
+      const g2 = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g2.addColorStop(0, 'rgba(15,8,4,0.95)');
+      g2.addColorStop(1, 'rgba(15,8,4,0)');
+      ctx.fillStyle = g2;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    return t;
   }
 
-  /* ---------- handle: TubeGeometry along a cubic bezier ---------- */
+  /* ---------- Latte-art / foam top texture (per coffee) ---------- */
+  function makeFoamArtTexture(coffee) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 512;
+    const ctx = c.getContext('2d');
+    const cx = 256, cy = 256;
+    const baseHex   = '#' + new THREE.Color(coffee.foamColor).getHexString();
+    const liquidHex = '#' + new THREE.Color(coffee.liquidColor).getHexString();
+    const liquidLight = '#' + new THREE.Color(coffee.liquidColor).lerp(new THREE.Color(0xffffff), 0.25).getHexString();
+
+    // Base fill
+    ctx.fillStyle = baseHex;
+    ctx.fillRect(0, 0, 512, 512);
+
+    // micro grain
+    for (let i = 0; i < 2500; i++) {
+      ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.04})`;
+      ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 1);
+    }
+    for (let i = 0; i < 1200; i++) {
+      ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.06})`;
+      ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 1);
+    }
+
+    if (coffee.art === 'crema') {
+      // Espresso/Americano: golden crema with tiger striping
+      const g = ctx.createRadialGradient(cx, cy, 30, cx, cy, 240);
+      g.addColorStop(0, baseHex);
+      g.addColorStop(0.5, '#7a4823');
+      g.addColorStop(1, '#3b1d0a');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, 240, 0, Math.PI * 2); ctx.fill();
+      // tiger striping
+      for (let i = 0; i < 14; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r1 = 60 + Math.random() * 140;
+        const r2 = r1 + 30 + Math.random() * 50;
+        ctx.strokeStyle = `rgba(${100 + Math.random() * 80},${50 + Math.random() * 30},20,${0.25 + Math.random() * 0.3})`;
+        ctx.lineWidth = 1 + Math.random() * 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r1, a, a + 0.6 + Math.random() * 0.8);
+        ctx.stroke();
+      }
+      // bubbles
+      for (let i = 0; i < 110; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.random() * 220;
+        const x = cx + Math.cos(a) * r;
+        const y = cy + Math.sin(a) * r;
+        const br = Math.random() * 4 + 0.5;
+        const bg = ctx.createRadialGradient(x - br * 0.3, y - br * 0.3, 0, x, y, br);
+        bg.addColorStop(0, `rgba(255,225,180,${Math.random() * 0.6 + 0.2})`);
+        bg.addColorStop(1, 'rgba(255,225,180,0)');
+        ctx.fillStyle = bg;
+        ctx.beginPath(); ctx.arc(x, y, br, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (coffee.art === 'rosetta') {
+      // Latte: classic rosetta art
+      ctx.save();
+      ctx.translate(cx, cy);
+      // foam pool
+      ctx.fillStyle = baseHex;
+      ctx.beginPath(); ctx.arc(0, 0, 220, 0, Math.PI * 2); ctx.fill();
+      // espresso ring around the milk pour
+      ctx.strokeStyle = liquidHex;
+      ctx.lineWidth = 24;
+      ctx.beginPath(); ctx.arc(0, 0, 215, 0, Math.PI * 2); ctx.stroke();
+      // outer ring soft falloff
+      ctx.strokeStyle = liquidLight;
+      ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.arc(0, 0, 200, 0, Math.PI * 2); ctx.stroke();
+      // rosetta leaves (descending)
+      ctx.fillStyle = baseHex;
+      const leaves = 7;
+      for (let i = 0; i < leaves; i++) {
+        const t = i / (leaves - 1);
+        const y = -150 + t * 280;
+        const w = 130 - Math.abs(t - 0.5) * 160;
+        ctx.beginPath();
+        ctx.ellipse(0, y, Math.max(20, w), 28, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // central drag-through stem
+      ctx.strokeStyle = liquidHex;
+      ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(0, -180); ctx.lineTo(0, 180); ctx.stroke();
+      // leaf veins (espresso bleed)
+      ctx.strokeStyle = 'rgba(120,70,40,0.45)';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < leaves; i++) {
+        const t = i / (leaves - 1);
+        const y = -150 + t * 280;
+        const w = 130 - Math.abs(t - 0.5) * 160;
+        ctx.beginPath();
+        ctx.moveTo(-Math.max(20, w), y);
+        ctx.lineTo(Math.max(20, w), y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    } else if (coffee.art === 'cocoa-dust') {
+      // Cappuccino: even foam dome with fine cocoa dust
+      const g = ctx.createRadialGradient(cx, cy, 60, cx, cy, 240);
+      g.addColorStop(0, '#fffaf0');
+      g.addColorStop(1, baseHex);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, 240, 0, Math.PI * 2); ctx.fill();
+      // cocoa dust
+      for (let i = 0; i < 2400; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.random() * 220;
+        const x = cx + Math.cos(a) * r;
+        const y = cy + Math.sin(a) * r;
+        ctx.fillStyle = `rgba(${50 + Math.random() * 30},${28 + Math.random() * 18},10,${0.25 + Math.random() * 0.55})`;
+        ctx.fillRect(x, y, Math.random() * 2 + 0.5, Math.random() * 2 + 0.5);
+      }
+      // a few larger flakes
+      for (let i = 0; i < 30; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.random() * 200;
+        ctx.fillStyle = `rgba(40,20,8,${0.4 + Math.random() * 0.4})`;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 1 + Math.random() * 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (coffee.art === 'cocoa-swirl') {
+      // Mocha: whipped cream with chocolate spiral
+      const g = ctx.createRadialGradient(cx, cy, 30, cx, cy, 240);
+      g.addColorStop(0, '#fffaf0');
+      g.addColorStop(1, baseHex);
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, 240, 0, Math.PI * 2); ctx.fill();
+      // spiral
+      ctx.strokeStyle = '#3a1a08';
+      ctx.lineWidth = 7;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      for (let a = 0; a < Math.PI * 6; a += 0.04) {
+        const r = a * 11;
+        const x = cx + Math.cos(a) * r;
+        const y = cy + Math.sin(a) * r;
+        if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      // sprinkled cocoa
+      for (let i = 0; i < 250; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = Math.random() * 220;
+        ctx.fillStyle = `rgba(60,30,12,${0.3 + Math.random() * 0.5})`;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * r, cy + Math.sin(a) * r, 0.5 + Math.random() * 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // soft vignette so foam blends into cup interior
+    const vg = ctx.createRadialGradient(cx, cy, 200, cx, cy, 256);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.6)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, 512, 512);
+
+    return new THREE.CanvasTexture(c);
+  }
+
+  /* ---------- Coffee bean geometry (small ovoid with crease) ---------- */
+  function makeBeanGeometry() {
+    const g = new THREE.SphereGeometry(0.05, 18, 14);
+    const pos = g.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      // elongate along Y
+      pos.setY(i, y * 1.4);
+      // press inward along X for the crease
+      const crease = Math.exp(-Math.pow(x / 0.015, 2)) * 0.018;
+      pos.setZ(i, z - crease);
+    }
+    g.computeVertexNormals();
+    return g;
+  }
+
+  /* ---------- Ceramic cup profile via LatheGeometry ----------
+     Realistic ceramic cup: foot ring, curved body, flared rim,
+     plus an inner wall so we see the cup interior.
+  ---------------------------------------------------------------- */
+  function buildCupGeometry() {
+    // Outer profile (closed at bottom)
+    const outerPts = [
+      new THREE.Vector2(0.62, 0.000), // foot outer
+      new THREE.Vector2(0.66, 0.020),
+      new THREE.Vector2(0.66, 0.060),
+      new THREE.Vector2(0.60, 0.075), // foot ring inset
+      new THREE.Vector2(0.60, 0.100),
+      new THREE.Vector2(0.64, 0.180),
+      new THREE.Vector2(0.69, 0.300),
+      new THREE.Vector2(0.73, 0.450),
+      new THREE.Vector2(0.76, 0.620),
+      new THREE.Vector2(0.78, 0.800),
+      new THREE.Vector2(0.80, 0.940),
+      new THREE.Vector2(0.835, 1.000), // flared rim
+      new THREE.Vector2(0.84, 1.030),
+      new THREE.Vector2(0.82, 1.040),
+    ];
+    // Inner wall: ~0.045 thinner, slightly lower top so liquid sits inside
+    const wall = 0.045;
+    const innerPts = [
+      new THREE.Vector2(0.0, 0.105),
+      new THREE.Vector2(0.55, 0.105),                      // inner floor
+      new THREE.Vector2(0.60 - wall, 0.180),
+      new THREE.Vector2(0.65 - wall, 0.300),
+      new THREE.Vector2(0.69 - wall, 0.450),
+      new THREE.Vector2(0.72 - wall, 0.620),
+      new THREE.Vector2(0.74 - wall, 0.800),
+      new THREE.Vector2(0.76 - wall, 0.940),
+      new THREE.Vector2(0.795, 1.000),
+      new THREE.Vector2(0.80, 1.025),
+      new THREE.Vector2(0.815, 1.038),
+    ];
+    return {
+      outer: new THREE.LatheGeometry(outerPts, 96),
+      inner: new THREE.LatheGeometry(innerPts, 96),
+      rimY: 1.040,
+      innerFloorY: 0.105,
+      innerTopRadius: 0.795,
+    };
+  }
+
+  /* ---------- Handle: TubeGeometry along a cubic bezier ---------- */
   function buildHandle() {
-    // three.js doesn't expose CubicBezierCurve3 in some r128 builds
-    // CatmullRomCurve3 with bezier-style control points works the same shape.
     const cy = 0.55;
-    const start = new THREE.Vector3(0.78, cy + 0.22, 0);
-    const ctrl1 = new THREE.Vector3(1.30, cy + 0.30, 0);
-    const ctrl2 = new THREE.Vector3(1.30, cy - 0.30, 0);
-    const end   = new THREE.Vector3(0.78, cy - 0.22, 0);
+    const start = new THREE.Vector3(0.78, cy + 0.24, 0);
+    const ctrl1 = new THREE.Vector3(1.34, cy + 0.32, 0);
+    const ctrl2 = new THREE.Vector3(1.34, cy - 0.32, 0);
+    const end   = new THREE.Vector3(0.78, cy - 0.24, 0);
     const curve = new THREE.CubicBezierCurve3(start, ctrl1, ctrl2, end);
-    return new THREE.TubeGeometry(curve, 64, 0.05, 16, false);
+    return new THREE.TubeGeometry(curve, 80, 0.052, 24, false);
+  }
+
+  /* ---------- Equirect environment for reflections ---------- */
+  function buildEnvTexture() {
+    const c = document.createElement('canvas');
+    c.width = 1024; c.height = 512;
+    const ctx = c.getContext('2d');
+    // sky -> warm light -> ground bands
+    const g = ctx.createLinearGradient(0, 0, 0, 512);
+    g.addColorStop(0,    '#1a0e07');
+    g.addColorStop(0.3,  '#3d2010');
+    g.addColorStop(0.5,  '#a07246');
+    g.addColorStop(0.55, '#f0c79a');
+    g.addColorStop(0.62, '#7a4828');
+    g.addColorStop(0.85, '#2a1709');
+    g.addColorStop(1,    '#0c0604');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 1024, 512);
+    // warm cafe lights
+    for (let i = 0; i < 8; i++) {
+      const x = Math.random() * 1024;
+      const y = 140 + Math.random() * 90;
+      const r = 50 + Math.random() * 80;
+      const rg = ctx.createRadialGradient(x, y, 0, x, y, r);
+      rg.addColorStop(0, 'rgba(255,210,150,0.95)');
+      rg.addColorStop(1, 'rgba(255,210,150,0)');
+      ctx.fillStyle = rg;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    }
+    // a hint of cool window light on the left
+    const cool = ctx.createRadialGradient(150, 200, 0, 150, 200, 220);
+    cool.addColorStop(0, 'rgba(180,200,240,0.5)');
+    cool.addColorStop(1, 'rgba(180,200,240,0)');
+    ctx.fillStyle = cool;
+    ctx.fillRect(0, 0, 400, 400);
+    const t = new THREE.CanvasTexture(c);
+    t.mapping = THREE.EquirectangularReflectionMapping;
+    if (THREE.sRGBEncoding !== undefined) t.encoding = THREE.sRGBEncoding;
+    return t;
   }
 
   /* ---------- INIT ---------- */
@@ -931,10 +1226,10 @@ const CoffeeScene = (() => {
     const w = wrap.clientWidth, h = wrap.clientHeight;
 
     scene = new THREE.Scene();
-    scene.fog = new THREE.Fog(0x1a0c06, 6, 16);
+    scene.fog = new THREE.Fog(0x130a05, 7, 18);
 
-    camera = new THREE.PerspectiveCamera(35, w / h, 0.1, 100);
-    camera.position.set(0, 1.4, 4.6);
+    camera = new THREE.PerspectiveCamera(32, w / h, 0.1, 100);
+    camera.position.set(0, 1.6, 4.8);
     camera.lookAt(0, 0.55, 0);
 
     renderer = new THREE.WebGLRenderer({
@@ -952,37 +1247,51 @@ const CoffeeScene = (() => {
       renderer.toneMappingExposure = 1.05;
     }
 
-    /* ---------- LIGHTS (Hemisphere + Directional key + rim + Point) ---------- */
-    const hemi = new THREE.HemisphereLight(0xffe4cc, 0x2a1810, 0.45);
+    /* ---------- ENVIRONMENT (PMREM if available, else direct cubemap) ---------- */
+    const envSrc = buildEnvTexture();
+    if (THREE.PMREMGenerator) {
+      const pmrem = new THREE.PMREMGenerator(renderer);
+      const envRT = pmrem.fromEquirectangular(envSrc);
+      scene.environment = envRT.texture;
+      pmrem.dispose();
+      envSrc.dispose();
+    } else {
+      scene.environment = envSrc;
+    }
+
+    /* ---------- LIGHTS ---------- */
+    const hemi = new THREE.HemisphereLight(0xffe4cc, 0x2a1810, 0.4);
     scene.add(hemi);
 
-    // Key light (warm, top-front)
-    const key = new THREE.DirectionalLight(0xffe1b5, 1.4);
-    key.position.set(3, 5, 4);
+    const key = new THREE.DirectionalLight(0xffe1b5, 1.6);
+    key.position.set(2.6, 5, 3.5);
     key.castShadow = true;
-    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.mapSize.set(2048, 2048);
     key.shadow.camera.left = -3;
     key.shadow.camera.right = 3;
     key.shadow.camera.top = 3;
     key.shadow.camera.bottom = -3;
-    key.shadow.bias = -0.0005;
+    key.shadow.camera.near = 0.5;
+    key.shadow.camera.far = 14;
+    key.shadow.bias = -0.0004;
+    key.shadow.radius = 4;
     scene.add(key);
 
-    // Rim light (cool kiss from behind)
-    const rim = new THREE.DirectionalLight(0x88aaff, 0.6);
-    rim.position.set(-3, 2.5, -3);
+    const rim = new THREE.DirectionalLight(0x99bbff, 0.6);
+    rim.position.set(-3.2, 2.8, -3);
     scene.add(rim);
 
-    // Point light fill (warm)
     const pt = new THREE.PointLight(0xffaa66, 0.7, 7);
-    pt.position.set(0.5, 1.6, 2.2);
+    pt.position.set(0.6, 1.7, 2.4);
     scene.add(pt);
 
-    /* ---------- TABLE (catches shadow) ---------- */
-    const tableGeo = new THREE.CircleGeometry(4, 64);
+    /* ---------- WOODEN TABLE ---------- */
+    const woodTex = makeWoodTexture();
+    woodTex.repeat.set(1.6, 1.6);
+    const tableGeo = new THREE.CircleGeometry(5, 96);
     const tableMat = new THREE.MeshStandardMaterial({
-      color: 0x3a2418,
-      roughness: 0.85,
+      map: woodTex,
+      roughness: 0.78,
       metalness: 0.05,
     });
     const table = new THREE.Mesh(tableGeo, tableMat);
@@ -991,92 +1300,160 @@ const CoffeeScene = (() => {
     table.receiveShadow = true;
     scene.add(table);
 
-    /* ---------- CUP GROUP (floats + parallax) ---------- */
+    // Soft contact-shadow patch under the saucer
+    const shGeo = new THREE.CircleGeometry(1.5, 32);
+    const shMat = new THREE.MeshBasicMaterial({
+      color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false,
+    });
+    const sh = new THREE.Mesh(shGeo, shMat);
+    sh.rotation.x = -Math.PI / 2;
+    sh.position.y = -0.049;
+    scene.add(sh);
+
+    /* ---------- CUP GROUP ---------- */
     cupGroup = new THREE.Group();
-    cupGroup.position.y = 0;
     scene.add(cupGroup);
 
-    // SAUCER (lathe profile)
+    // SAUCER (lathe profile with a deeper well)
     const sPts = [
-      new THREE.Vector2(0.0,  0.00),
+      new THREE.Vector2(0.00, 0.000),
       new THREE.Vector2(0.30, 0.005),
-      new THREE.Vector2(0.65, 0.012),
-      new THREE.Vector2(1.00, 0.030),
-      new THREE.Vector2(1.20, 0.060),
-      new THREE.Vector2(1.18, 0.075),
-      new THREE.Vector2(1.05, 0.075),
+      new THREE.Vector2(0.55, 0.012),
+      new THREE.Vector2(0.72, 0.005),  // dip for the cup foot
+      new THREE.Vector2(0.85, 0.020),
+      new THREE.Vector2(1.05, 0.040),
+      new THREE.Vector2(1.22, 0.072),
+      new THREE.Vector2(1.21, 0.085),
+      new THREE.Vector2(1.10, 0.085),
     ];
-    const saucerGeo = new THREE.LatheGeometry(sPts, 96);
+    const ceramicNormal = makeCeramicNormal();
     const saucerMat = new THREE.MeshStandardMaterial({
-      color: 0xf5f0e6,
-      roughness: 0.32,
+      color: 0xf6f0e5,
+      roughness: 0.30,
       metalness: 0.08,
-      normalMap: makeCeramicNormal(),
-      normalScale: new THREE.Vector2(0.04, 0.04),
+      normalMap: ceramicNormal,
+      normalScale: new THREE.Vector2(0.05, 0.05),
+      envMapIntensity: 1.1,
     });
-    const saucer = new THREE.Mesh(saucerGeo, saucerMat);
+    const saucer = new THREE.Mesh(new THREE.LatheGeometry(sPts, 96), saucerMat);
     saucer.position.y = -0.05;
     saucer.castShadow = true;
     saucer.receiveShadow = true;
     cupGroup.add(saucer);
 
-    // CUP BODY
+    // CUP (outer body + inner wall)
+    const cupGeo = buildCupGeometry();
     cupMat = new THREE.MeshStandardMaterial({
       color: COFFEES[0].cupTint,
       roughness: 0.22,
-      metalness: 0.07,
-      normalMap: makeCeramicNormal(),
+      metalness: 0.06,
+      normalMap: ceramicNormal,
       normalScale: new THREE.Vector2(0.05, 0.05),
-      side: THREE.DoubleSide,
+      envMapIntensity: 1.2,
     });
-    cupBody = new THREE.Mesh(buildCupGeometry(), cupMat);
-    cupBody.castShadow = true;
-    cupBody.receiveShadow = true;
-    cupGroup.add(cupBody);
+    cupOuter = new THREE.Mesh(cupGeo.outer, cupMat);
+    cupOuter.castShadow = true;
+    cupOuter.receiveShadow = true;
+    cupGroup.add(cupOuter);
 
-    // BOTTOM CAP (so light doesn't bleed through cup interior)
-    const bottomGeo = new THREE.CircleGeometry(0.6, 64);
-    const bottom = new THREE.Mesh(bottomGeo, cupMat);
-    bottom.rotation.x = -Math.PI / 2;
-    bottom.position.y = 0.06;
-    cupGroup.add(bottom);
+    cupInnerMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(COFFEES[0].cupTint).multiplyScalar(0.85),
+      roughness: 0.32,
+      metalness: 0.04,
+      side: THREE.BackSide,
+      envMapIntensity: 0.7,
+    });
+    cupInner = new THREE.Mesh(cupGeo.inner, cupInnerMat);
+    cupGroup.add(cupInner);
 
-    // HANDLE (tube along bezier)
+    // HANDLE
     handle = new THREE.Mesh(buildHandle(), cupMat);
     handle.castShadow = true;
     handle.receiveShadow = true;
     cupGroup.add(handle);
 
-    // LIQUID surface disc (glossy, low roughness)
-    const liquidGeo = new THREE.CircleGeometry(0.74, 96);
-    liquidMat = new THREE.MeshStandardMaterial({
+    // LIQUID — physical material if available for clearcoat
+    const innerR = cupGeo.innerTopRadius;
+    const liquidLevelY = 0.92; // a hair below rim
+    const liquidGeo = new THREE.CircleGeometry(innerR - 0.02, 96);
+    const PhysMat = THREE.MeshPhysicalMaterial || THREE.MeshStandardMaterial;
+    liquidMat = new PhysMat({
       color: COFFEES[0].liquidColor,
       roughness: 0.05,
       metalness: 0.2,
       emissive: 0x1a0a04,
       emissiveIntensity: 0.18,
+      envMapIntensity: 1.6,
     });
+    if (PhysMat === THREE.MeshPhysicalMaterial) {
+      liquidMat.clearcoat = 1.0;
+      liquidMat.clearcoatRoughness = 0.08;
+      liquidMat.reflectivity = 0.6;
+    }
     liquid = new THREE.Mesh(liquidGeo, liquidMat);
     liquid.rotation.x = -Math.PI / 2;
-    liquid.position.y = 0.93;
+    liquid.position.y = liquidLevelY;
     cupGroup.add(liquid);
 
-    // FOAM cylinder layer on top
-    const foamGeo = new THREE.CylinderGeometry(0.74, 0.74, 1, 64);
+    // FOAM body (thick disc with side wall)
+    const foamGeo = new THREE.CylinderGeometry(innerR - 0.025, innerR - 0.04, 1, 64, 1, false);
     foamMat = new THREE.MeshStandardMaterial({
       color: COFFEES[0].foamColor,
-      roughness: 0.85,
+      roughness: 0.88,
       metalness: 0.0,
     });
     foam = new THREE.Mesh(foamGeo, foamMat);
     foam.scale.y = COFFEES[0].foamThickness;
-    foam.position.y = 0.93 + (COFFEES[0].foamThickness * 0.5);
+    foam.position.y = liquidLevelY + COFFEES[0].foamThickness * 0.5;
     foam.castShadow = true;
     cupGroup.add(foam);
 
+    // FOAM ART top disc (the latte art / crema pattern)
+    foamArtMat = new THREE.MeshStandardMaterial({
+      map: makeFoamArtTexture(COFFEES[0]),
+      roughness: 0.65,
+      metalness: 0.0,
+      transparent: true,
+    });
+    foamArt = new THREE.Mesh(new THREE.CircleGeometry(innerR - 0.03, 96), foamArtMat);
+    foamArt.rotation.x = -Math.PI / 2;
+    foamArt.position.y = liquidLevelY + COFFEES[0].foamThickness + 0.001;
+    cupGroup.add(foamArt);
+
+    // COFFEE BEANS scattered on the saucer
+    const beanGeo = makeBeanGeometry();
+    const beanMat = new THREE.MeshStandardMaterial({
+      color: 0x3a1d0d,
+      roughness: 0.55,
+      metalness: 0.05,
+    });
+    const beanMatLight = new THREE.MeshStandardMaterial({
+      color: 0x5a2f15,
+      roughness: 0.55,
+      metalness: 0.05,
+    });
+    const beanPositions = [
+      [-1.08,  0.0,  0.10, 0.4],
+      [-1.05,  0.0, -0.20, -0.6],
+      [-1.00,  0.0,  0.40, 1.2],
+      [ 1.05,  0.0, -0.05, -0.3],
+      [ 1.10,  0.0, -0.32, 0.8],
+      [ 0.95,  0.0,  0.38, -1.0],
+    ];
+    beanPositions.forEach(([x, _, z, rot], i) => {
+      const b = new THREE.Mesh(beanGeo, i % 2 === 0 ? beanMat : beanMatLight);
+      b.position.set(x, -0.005, z);
+      b.rotation.set(Math.PI / 2 + (Math.random() - 0.5) * 0.4, rot, (Math.random() - 0.5) * 0.5);
+      b.scale.set(1.1 + Math.random() * 0.3, 1.1 + Math.random() * 0.3, 1.1 + Math.random() * 0.3);
+      b.castShadow = true;
+      b.receiveShadow = true;
+      cupGroup.add(b);
+      beans.push(b);
+    });
+
     /* ---------- STEAM SPRITES ---------- */
     const steamTex = makeSteamTexture();
-    const STEAM_COUNT = 14;
+    const STEAM_COUNT = 20;
     for (let i = 0; i < STEAM_COUNT; i++) {
       const mat = new THREE.SpriteMaterial({
         map: steamTex,
@@ -1084,14 +1461,15 @@ const CoffeeScene = (() => {
         transparent: true,
         opacity: 0,
         depthWrite: false,
-        blending: THREE.AdditiveBlending,
+        blending: THREE.NormalBlending,
       });
       const s = new THREE.Sprite(mat);
       s.scale.set(0.5, 0.5, 1);
       s.userData = {
         seed: Math.random(),
         wob: Math.random() * Math.PI * 2,
-        wobSpeed: 0.5 + Math.random() * 1.5,
+        wobSpeed: 0.5 + Math.random() * 1.6,
+        offset: Math.random() * 3,
       };
       cupGroup.add(s);
       steamSprites.push(s);
@@ -1114,7 +1492,6 @@ const CoffeeScene = (() => {
       mouseX = (e.clientX - cx) / window.innerWidth;
       mouseY = (e.clientY - cy) / window.innerHeight;
     });
-    // touch
     window.addEventListener('touchmove', (e) => {
       if (!e.touches.length) return;
       const t = e.touches[0];
@@ -1159,45 +1536,60 @@ const CoffeeScene = (() => {
       if (lerpFrame >= LERP_FRAMES) lerping = false;
     }
 
-    // apply to materials
+    // apply live values to materials
     liquidMat.color.copy(liveVals.liquid);
     foamMat.color.copy(liveVals.foam);
     cupMat.color.copy(liveVals.cup);
-    foam.scale.y = Math.max(liveVals.foamThickness, 0.005);
-    foam.position.y = 0.93 + (liveVals.foamThickness * 0.5);
+    cupInnerMat.color.copy(liveVals.cup).multiplyScalar(0.85);
 
-    /* ----- floating bob + mouse-parallax rotation ----- */
-    const targetRotY = mouseX * 0.6;
-    const targetRotX = -mouseY * 0.4;
+    foam.scale.y = Math.max(liveVals.foamThickness, 0.005);
+    const liquidLevelY = 0.92;
+    foam.position.y = liquidLevelY + (liveVals.foamThickness * 0.5);
+    if (foamArt) foamArt.position.y = liquidLevelY + liveVals.foamThickness + 0.001;
+
+    // subtle liquid surface ripple (vertical wobble + tilt of foam art)
+    const ripple = Math.sin(t * 2.0) * 0.0015;
+    liquid.position.y = liquidLevelY + ripple;
+    if (foamArt) {
+      foamArt.rotation.z = Math.sin(t * 0.4) * 0.05;
+      // very slight wobble of art height
+      foamArt.position.y += ripple * 0.6;
+    }
+
+    /* ----- floating bob + smooth mouse parallax rotation ----- */
+    const targetRotY = mouseX * 0.7;
+    const targetRotX = -mouseY * 0.35;
     curRotY = lerpNum(curRotY, targetRotY, 0.06);
     curRotX = lerpNum(curRotX, targetRotX, 0.06);
-    cupGroup.rotation.y = curRotY + Math.sin(t * 0.4) * 0.05;
+    cupGroup.rotation.y = curRotY + Math.sin(t * 0.4) * 0.04;
     cupGroup.rotation.x = curRotX;
     cupGroup.position.y = Math.sin(t * 1.2) * 0.04;
 
     /* ----- steam: drift up, fade in/out ----- */
     steamSprites.forEach((s, i) => {
       const u = s.userData;
-      // 3 second life cycle, staggered per sprite
-      const lifeT = ((t * 0.5) + u.seed * 4) % 3;
-      const life = lifeT / 3;
-      const a = u.seed * Math.PI * 2 + t * 0.3;
-      const r = 0.05 + life * 0.35;
-      s.position.x = Math.cos(a) * r + Math.sin(t * u.wobSpeed + u.wob) * 0.05;
-      s.position.z = Math.sin(a) * r + Math.cos(t * u.wobSpeed + u.wob) * 0.05;
-      s.position.y = 0.93 + liveVals.foamThickness + 0.15 + life * 1.4;
-      const sc = 0.25 + life * 0.95;
+      // 4s lifecycle, staggered
+      const lifeT = ((t * 0.45) + u.offset) % 4;
+      const life = lifeT / 4;
+      const a = u.seed * Math.PI * 2 + t * 0.25;
+      const r = 0.05 + life * 0.45;
+      s.position.x = Math.cos(a) * r + Math.sin(t * u.wobSpeed + u.wob) * 0.06;
+      s.position.z = Math.sin(a) * r + Math.cos(t * u.wobSpeed + u.wob) * 0.06;
+      s.position.y = liquidLevelY + liveVals.foamThickness + 0.18 + life * 1.8;
+      const sc = 0.32 + life * 1.15;
       s.scale.set(sc, sc, 1);
-      const fade = Math.sin(life * Math.PI);
+      // smooth fade-in then long fade-out
+      const fade = Math.sin(life * Math.PI) * (1 - Math.pow(life, 1.4));
       const m = steamMaterials[i];
-      m.opacity = Math.max(0, fade * liveVals.steamOpacity);
+      m.opacity = Math.max(0, fade * liveVals.steamOpacity * 1.3);
       m.color.copy(liveVals.steam);
+      m.rotation = u.wob + t * 0.15;
     });
 
     renderer.render(scene, camera);
   }
 
-  /* ---------- public: switch to coffee, lerp 60 frames ---------- */
+  /* ---------- public: switch to coffee, lerp 60 frames + swap art texture ---------- */
   function setCoffee(coffee) {
     fromVals.liquid.copy(liveVals.liquid);
     fromVals.foam.copy(liveVals.foam);
@@ -1215,6 +1607,14 @@ const CoffeeScene = (() => {
 
     lerpFrame = 0;
     lerping = true;
+
+    // Swap the latte-art texture (immediately, but the foam scale lerps so it grows in)
+    if (foamArtMat) {
+      const old = foamArtMat.map;
+      foamArtMat.map = makeFoamArtTexture(coffee);
+      foamArtMat.needsUpdate = true;
+      if (old) old.dispose();
+    }
   }
 
   return { init, setCoffee };
