@@ -730,6 +730,7 @@ const COFFEES = [
     short: 'Bold and intense.',
     tag: 'Strong',
     img: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=220&q=80&fit=crop',
+    topImg: 'https://images.unsplash.com/photo-1510707577719-ae7c14805e3a?auto=format&fit=crop&crop=center&w=512&h=512&q=85',
     liquidColor: 0x2a1306,
     foamColor:   0xa86b3a,
     foamThickness: 0.05,
@@ -745,6 +746,7 @@ const COFFEES = [
     short: 'Smooth and creamy.',
     tag: 'Mild',
     img: 'https://images.unsplash.com/photo-1561047029-3000c68339ca?w=220&q=80&fit=crop',
+    topImg: 'https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&crop=center&w=512&h=512&q=85',
     liquidColor: 0xc59870,
     foamColor:   0xfff5e0,
     foamThickness: 0.18,
@@ -760,6 +762,7 @@ const COFFEES = [
     short: 'Foamy and balanced.',
     tag: 'Classic',
     img: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=220&q=80&fit=crop',
+    topImg: 'https://images.unsplash.com/photo-1534687941688-651ccaafbff8?auto=format&fit=crop&crop=center&w=512&h=512&q=85',
     liquidColor: 0x8a5e3e,
     foamColor:   0xfff2dc,
     foamThickness: 0.32,
@@ -775,6 +778,7 @@ const COFFEES = [
     short: 'Chocolate indulgence.',
     tag: 'Sweet',
     img: 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=220&q=80&fit=crop',
+    topImg: 'https://images.unsplash.com/photo-1599639668273-3b8d5a0c2c8a?auto=format&fit=crop&crop=center&w=512&h=512&q=85',
     liquidColor: 0x3d1e0e,
     foamColor:   0xe8c896,
     foamThickness: 0.25,
@@ -790,6 +794,7 @@ const COFFEES = [
     short: 'Smooth and light.',
     tag: 'Long',
     img: 'https://images.unsplash.com/photo-1521302080334-4bebac2763a6?w=220&q=80&fit=crop',
+    topImg: 'https://images.unsplash.com/photo-1494314671902-399b18174975?auto=format&fit=crop&crop=center&w=512&h=512&q=85',
     liquidColor: 0x40200d,
     foamColor:   0x6b3a1e,
     foamThickness: 0.06,
@@ -940,6 +945,55 @@ const CoffeeScene = (() => {
     const t = new THREE.CanvasTexture(c);
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     return t;
+  }
+
+  /* ---------- Real photo top-down → masked circular foam texture ---------- */
+  // Loads an image, draws it into a 512x512 canvas with a circular alpha mask
+  // and a soft vignette so the rectangular photo blends into the cup interior.
+  const _topTexCache = {};
+  function loadFoamTopTexture(url, onReady) {
+    if (_topTexCache[url]) { onReady(_topTexCache[url]); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = c.height = 512;
+      const ctx = c.getContext('2d');
+      // cover-fit the image into the square canvas
+      const s = Math.min(img.width, img.height);
+      const sx = (img.width - s) / 2;
+      const sy = (img.height - s) / 2;
+      ctx.drawImage(img, sx, sy, s, s, 0, 0, 512, 512);
+      // boost contrast slightly for that cafe-photo look
+      ctx.fillStyle = 'rgba(0,0,0,0.04)';
+      ctx.fillRect(0, 0, 512, 512);
+      // circular alpha mask
+      ctx.globalCompositeOperation = 'destination-in';
+      const cx = 256, cy = 256, r = 250;
+      const mask = ctx.createRadialGradient(cx, cy, r * 0.85, cx, cy, r);
+      mask.addColorStop(0, 'rgba(0,0,0,1)');
+      mask.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = mask;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      // dark vignette to blend with cup interior
+      ctx.globalCompositeOperation = 'source-over';
+      const vg = ctx.createRadialGradient(cx, cy, r * 0.7, cx, cy, r);
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.55)');
+      ctx.fillStyle = vg;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+
+      const tex = new THREE.CanvasTexture(c);
+      if (THREE.sRGBEncoding !== undefined) tex.encoding = THREE.sRGBEncoding;
+      tex.anisotropy = 8;
+      _topTexCache[url] = tex;
+      onReady(tex);
+    };
+    img.onerror = () => {
+      // photo failed (e.g. offline) -> fall back to procedural art
+      onReady(null);
+    };
+    img.src = url;
   }
 
   /* ---------- Latte-art / foam top texture (per coffee) ---------- */
@@ -1420,6 +1474,18 @@ const CoffeeScene = (() => {
     foamArt.position.y = liquidLevelY + COFFEES[0].foamThickness + 0.001;
     cupGroup.add(foamArt);
 
+    // Try to upgrade the foam art to a real top-down photo
+    if (COFFEES[0].topImg) {
+      loadFoamTopTexture(COFFEES[0].topImg, (tex) => {
+        if (tex && foamArtMat) {
+          const old = foamArtMat.map;
+          foamArtMat.map = tex;
+          foamArtMat.needsUpdate = true;
+          if (old && !Object.values(_topTexCache).includes(old)) old.dispose();
+        }
+      });
+    }
+
     // COFFEE BEANS scattered on the saucer
     const beanGeo = makeBeanGeometry();
     const beanMat = new THREE.MeshStandardMaterial({
@@ -1556,14 +1622,14 @@ const CoffeeScene = (() => {
       foamArt.position.y += ripple * 0.6;
     }
 
-    /* ----- floating bob + smooth mouse parallax rotation ----- */
-    const targetRotY = mouseX * 0.7;
-    const targetRotX = -mouseY * 0.35;
-    curRotY = lerpNum(curRotY, targetRotY, 0.06);
-    curRotX = lerpNum(curRotX, targetRotX, 0.06);
-    cupGroup.rotation.y = curRotY + Math.sin(t * 0.4) * 0.04;
+    /* ----- gentle settle, no exaggerated bob ----- */
+    const targetRotY = mouseX * 0.5;
+    const targetRotX = -mouseY * 0.25;
+    curRotY = lerpNum(curRotY, targetRotY, 0.05);
+    curRotX = lerpNum(curRotX, targetRotX, 0.05);
+    cupGroup.rotation.y = curRotY + Math.sin(t * 0.3) * 0.015;
     cupGroup.rotation.x = curRotX;
-    cupGroup.position.y = Math.sin(t * 1.2) * 0.04;
+    cupGroup.position.y = Math.sin(t * 0.9) * 0.012;
 
     /* ----- steam: drift up, fade in/out ----- */
     steamSprites.forEach((s, i) => {
@@ -1608,12 +1674,22 @@ const CoffeeScene = (() => {
     lerpFrame = 0;
     lerping = true;
 
-    // Swap the latte-art texture (immediately, but the foam scale lerps so it grows in)
+    // Swap the foam-top texture: prefer real photo, fall back to procedural art
     if (foamArtMat) {
-      const old = foamArtMat.map;
-      foamArtMat.map = makeFoamArtTexture(coffee);
-      foamArtMat.needsUpdate = true;
-      if (old) old.dispose();
+      const applyTex = (tex) => {
+        if (!foamArtMat) return;
+        const old = foamArtMat.map;
+        foamArtMat.map = tex;
+        foamArtMat.needsUpdate = true;
+        if (old && !Object.values(_topTexCache).includes(old)) old.dispose();
+      };
+      // Apply procedural immediately (so swap is instant), then upgrade to photo.
+      applyTex(makeFoamArtTexture(coffee));
+      if (coffee.topImg) {
+        loadFoamTopTexture(coffee.topImg, (tex) => {
+          if (tex) applyTex(tex);
+        });
+      }
     }
   }
 
