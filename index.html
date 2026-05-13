@@ -1,172 +1,1320 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Brew Haven &mdash; Artisan Coffee, Crafted in 3D</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=Poppins:wght@300;400;500;600&display=swap"
-    rel="stylesheet"
-  />
-  <link rel="stylesheet" href="styles.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Brew Haven &mdash; Artisan Coffee, Crafted in 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;0,900;1,700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* =====================================================
+     RESET / BASE
+  ===================================================== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-0: #0c0604;
+    --bg-1: #18100a;
+    --bg-2: #2a1810;
+    --bg-3: #3a2418;
+    --cream: #f5e6d3;
+    --milk: #fff8ee;
+    --coffee: #6f4e37;
+    --espresso: #2b1407;
+    --gold: #d4a574;
+    --gold-2: #f0c790;
+    --accent: #e8a87c;
+    --text: #f5e6d3;
+    --muted: #b8a591;
+    --border: rgba(232, 168, 124, 0.15);
+    --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 30px 80px rgba(0, 0, 0, 0.5);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+    background:
+      radial-gradient(ellipse at 50% -10%, #3a2418 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 50%, rgba(232, 168, 124, 0.08) 0%, transparent 60%),
+      linear-gradient(180deg, #18100a 0%, #0c0604 100%);
+    background-attachment: fixed;
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  .accent {
+    color: var(--gold);
+    font-style: italic;
+    font-family: 'Playfair Display', serif;
+  }
+  .lead { color: var(--muted); line-height: 1.75; }
+  .eyebrow {
+    display: inline-block;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    font-size: 0.75rem;
+    color: var(--gold);
+    margin-bottom: 1rem;
+    font-weight: 500;
+    position: relative;
+    padding-left: 32px;
+  }
+  .eyebrow::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 50%;
+    width: 24px; height: 1px;
+    background: var(--gold);
+  }
+
+  /* =====================================================
+     ATMOSPHERIC BACKGROUND STEAM
+  ===================================================== */
+  .steam-bg {
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 0;
+    overflow: hidden;
+  }
+  .steam-bg span {
+    position: absolute;
+    bottom: -250px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(232, 168, 124, 0.06), transparent 70%);
+    border-radius: 50%;
+    animation: steamRise 22s linear infinite;
+    filter: blur(50px);
+  }
+  .steam-bg span:nth-child(1) { left: 8%; animation-delay: 0s; }
+  .steam-bg span:nth-child(2) { left: 28%; animation-delay: 5s; }
+  .steam-bg span:nth-child(3) { left: 50%; animation-delay: 10s; }
+  .steam-bg span:nth-child(4) { left: 72%; animation-delay: 15s; }
+  .steam-bg span:nth-child(5) { left: 90%; animation-delay: 20s; }
+  @keyframes steamRise {
+    0% { transform: translateY(0) scale(0.4); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateY(-130vh) scale(2.2); opacity: 0; }
+  }
+
+  /* =====================================================
+     NAVBAR (fixed)
+  ===================================================== */
+  .nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 5%;
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    background: rgba(12, 6, 4, 0.65);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    display: flex; align-items: center; gap: 0.6rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.55rem; font-weight: 700;
+  }
+  .logo-icon {
+    font-size: 1.7rem; color: var(--gold);
+    filter: drop-shadow(0 2px 6px rgba(232,168,124,0.4));
+  }
+  .nav-links { display: flex; gap: 2.4rem; list-style: none; }
+  .nav-links a {
+    color: var(--text); text-decoration: none;
+    font-size: 0.95rem; font-weight: 400;
+    position: relative; transition: color 0.3s;
+  }
+  .nav-links a::after {
+    content: '';
+    position: absolute; bottom: -8px; left: 0;
+    width: 0; height: 2px; background: var(--gold);
+    transition: width 0.3s ease;
+  }
+  .nav-links a:hover { color: var(--gold); }
+  .nav-links a:hover::after { width: 100%; }
+
+  .cta-btn {
+    background: linear-gradient(135deg, var(--gold) 0%, #b8864a 100%);
+    color: var(--bg-0);
+    border: none;
+    padding: 0.8rem 1.85rem;
+    border-radius: 50px;
+    font-family: inherit; font-weight: 600; font-size: 0.92rem;
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    box-shadow: 0 8px 24px rgba(212, 165, 116, 0.3);
+  }
+  .cta-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 36px rgba(212, 165, 116, 0.45);
+  }
+  .cta-btn.ghost {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid rgba(212, 165, 116, 0.4);
+    box-shadow: none;
+  }
+  .cta-btn.ghost:hover {
+    background: rgba(212, 165, 116, 0.08);
+    border-color: var(--gold);
+  }
+
+  /* =====================================================
+     HERO
+  ===================================================== */
+  .hero {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    gap: 4rem;
+    padding: 8rem 5% 5rem;
+    min-height: 100vh;
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .hero-text h1 {
+    font-size: clamp(2.4rem, 5vw, 4.5rem);
+    margin-bottom: 1.5rem;
+  }
+  .hero-text .lead {
+    font-size: 1.08rem;
+    max-width: 540px;
+    margin-bottom: 2rem;
+  }
+  .hero-cta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 3rem;
+    flex-wrap: wrap;
+  }
+  .cta-btn.primary { padding: 1rem 2.25rem; font-size: 1rem; }
+
+  .stats {
+    display: flex;
+    gap: 2.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .stats div { display: flex; flex-direction: column; }
+  .stats strong {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.1rem;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .stats span {
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 0.4rem;
+  }
+
+  /* HERO RIGHT (3D + slider) */
+  .hero-right {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  #canvas-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 35%, rgba(255, 200, 150, 0.15) 0%, transparent 55%),
+      radial-gradient(circle at 50% 75%, rgba(232, 168, 124, 0.08) 0%, transparent 60%);
+  }
+  #canvas-wrap::after {
+    content: '';
+    position: absolute;
+    bottom: 4%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 18px;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, transparent 70%);
+    filter: blur(10px);
+    z-index: -1;
+  }
+  #coffee-canvas {
+    width: 100%; height: 100%;
+    display: block;
+    cursor: grab;
+  }
+  #coffee-canvas:active { cursor: grabbing; }
+
+  .current-coffee {
+    text-align: center;
+    max-width: 460px;
+    min-height: 100px;
+    padding: 0 1rem;
+  }
+  .current-coffee h3 {
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
+    background: linear-gradient(180deg, #fff5e3, var(--gold));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 0.3rem;
+  }
+  .current-coffee p {
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .current-coffee.changing { animation: fadeSlide 0.55s cubic-bezier(0.4, 0, 0.2, 1); }
+  @keyframes fadeSlide {
+    0%   { opacity: 1; transform: translateY(0); filter: blur(0); }
+    40%  { opacity: 0; transform: translateY(-14px); filter: blur(3px); }
+    100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+  }
+
+  /* =====================================================
+     COFFEE TYPE SLIDER (under 3D)
+  ===================================================== */
+  .slider-wrap {
+    position: relative;
+    width: 100%;
+    max-width: 540px;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+  }
+  .slider {
+    display: flex;
+    gap: 1rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    padding: 1rem 0.4rem 1.2rem;
+    flex: 1;
+    scrollbar-width: none;
+  }
+  .slider::-webkit-scrollbar { display: none; }
+
+  .coffee-card {
+    flex: 0 0 175px;
+    scroll-snap-align: center;
+    background: linear-gradient(165deg, rgba(58, 36, 24, 0.7), rgba(24, 16, 10, 0.95));
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                border-color 0.3s,
+                box-shadow 0.3s;
+    text-align: left;
+    font-family: inherit;
+    color: inherit;
+    padding: 0;
+  }
+  .coffee-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(212, 165, 116, 0.45);
+    box-shadow: var(--shadow-md);
+  }
+  .coffee-card.active {
+    border: 2px solid var(--gold);
+    background: linear-gradient(165deg, rgba(212, 165, 116, 0.18), rgba(40, 22, 14, 0.95));
+    transform: translateY(-8px) scale(1.04);
+    box-shadow: 0 20px 50px rgba(212, 165, 116, 0.3),
+                0 0 0 4px rgba(212, 165, 116, 0.15);
+  }
+  .coffee-card.active::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    pointer-events: none;
+    box-shadow: inset 0 0 30px rgba(212, 165, 116, 0.2);
+    animation: ringPulse 2s ease-in-out infinite;
+  }
+  @keyframes ringPulse {
+    0%, 100% { box-shadow: inset 0 0 30px rgba(212, 165, 116, 0.2); }
+    50% { box-shadow: inset 0 0 50px rgba(212, 165, 116, 0.35); }
+  }
+
+  .card-img {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: #1a0d05;
+  }
+  .card-img img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s ease;
+    display: block;
+  }
+  .coffee-card:hover .card-img img,
+  .coffee-card.active .card-img img {
+    transform: scale(1.08);
+  }
+  .card-img::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(12,6,4,0.7) 100%);
+  }
+  .card-body { padding: 0.85rem 1rem 1rem; }
+  .card-body h3 {
+    font-size: 1.1rem;
+    color: var(--cream);
+    margin-bottom: 0.3rem;
+  }
+  .coffee-card.active .card-body h3 { color: var(--gold-2); }
+  .card-body p {
+    font-size: 0.74rem;
+    color: var(--muted);
+    margin-bottom: 0.7rem;
+    line-height: 1.45;
+    min-height: 32px;
+  }
+  .card-body .tag {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: 50px;
+    background: rgba(212, 165, 116, 0.15);
+    color: var(--gold);
+    font-weight: 600;
+    font-size: 0.72rem;
+    border: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .slider-arrow {
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    border: 1px solid rgba(212, 165, 116, 0.3);
+    background: rgba(40, 24, 16, 0.7);
+    color: var(--gold);
+    font-size: 1.3rem;
+    cursor: pointer; flex-shrink: 0;
+    transition: all 0.3s;
+    display: grid; place-items: center;
+    backdrop-filter: blur(10px);
+    font-family: serif;
+    line-height: 1;
+  }
+  .slider-arrow:hover {
+    background: var(--gold);
+    color: var(--bg-0);
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(212, 165, 116, 0.4);
+  }
+
+  /* =====================================================
+     MENU SECTION (6-item grid)
+  ===================================================== */
+  .menu-section {
+    padding: 6rem 5%;
+    position: relative;
+    z-index: 1;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section-head {
+    text-align: center;
+    margin-bottom: 3.5rem;
+  }
+  .section-head h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin-bottom: 0.6rem;
+  }
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+  }
+  .menu-item {
+    background: linear-gradient(165deg, rgba(58, 36, 24, 0.55), rgba(24, 16, 10, 0.9));
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 0;
+    overflow: hidden;
+    transition: transform 0.4s, border-color 0.3s, box-shadow 0.3s;
+    position: relative;
+  }
+  .menu-item:hover {
+    transform: translateY(-8px);
+    border-color: rgba(212, 165, 116, 0.4);
+    box-shadow: var(--shadow-md);
+  }
+  .menu-item-img {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    position: relative;
+  }
+  .menu-item-img img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.7s ease;
+    display: block;
+  }
+  .menu-item:hover .menu-item-img img { transform: scale(1.06); }
+  .menu-item-body {
+    padding: 1.3rem 1.4rem 1.5rem;
+  }
+  .menu-item-body h4 {
+    font-size: 1.3rem;
+    margin-bottom: 0.4rem;
+    color: var(--cream);
+  }
+  .menu-item-body p {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+  .menu-item-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .menu-item-foot .price {
+    font-family: 'Playfair Display', serif;
+    color: var(--gold);
+    font-size: 1.4rem;
+    font-weight: 700;
+  }
+  .menu-item-foot .add {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: rgba(212, 165, 116, 0.12);
+    color: var(--gold);
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: all 0.3s;
+    display: grid; place-items: center;
+  }
+  .menu-item-foot .add:hover {
+    background: var(--gold);
+    color: var(--bg-0);
+    transform: rotate(90deg);
+  }
+
+  /* =====================================================
+     FOOTER
+  ===================================================== */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 5% 2rem;
+    position: relative;
+    z-index: 1;
+    background: rgba(12, 6, 4, 0.4);
+  }
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 2.5rem;
+    max-width: 1200px;
+    margin: 0 auto 2rem;
+  }
+  .footer-brand p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-top: 0.8rem;
+    max-width: 320px;
+    line-height: 1.7;
+  }
+  .footer-col h5 {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--gold);
+    margin-bottom: 1rem;
+  }
+  .footer-col ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .footer-col a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.3s;
+  }
+  .footer-col a:hover { color: var(--gold); }
+  .footer-bottom {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* =====================================================
+     RESPONSIVE
+  ===================================================== */
+  @media (max-width: 1000px) {
+    .hero { grid-template-columns: 1fr; gap: 2.5rem; padding-top: 7rem; }
+    .hero-right { order: -1; }
+    #canvas-wrap { max-width: 380px; }
+    .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
+  }
+  @media (max-width: 700px) {
+    .nav-links { display: none; }
+    .stats { gap: 1.5rem; }
+    .stats strong { font-size: 1.6rem; }
+    #canvas-wrap { max-width: 320px; }
+    .coffee-card { flex: 0 0 155px; }
+  }
+  @media (max-width: 500px) {
+    .nav { padding: 0.9rem 5%; }
+    .logo span:not(.logo-icon) { display: none; }
+    .footer-grid { grid-template-columns: 1fr; }
+    .hero-cta .cta-btn { flex: 1; min-width: 140px; }
+  }
+</style>
 </head>
 <body>
-  <!-- Atmospheric steam -->
-  <div class="steam-bg" aria-hidden="true">
-    <span></span><span></span><span></span><span></span><span></span>
+
+<!-- Atmospheric backdrop steam -->
+<div class="steam-bg" aria-hidden="true">
+  <span></span><span></span><span></span><span></span><span></span>
+</div>
+
+<!-- ==================== NAVBAR ==================== -->
+<nav class="nav">
+  <div class="logo">
+    <span class="logo-icon">&#9749;</span>
+    <span>Brew Haven</span>
   </div>
+  <ul class="nav-links">
+    <li><a href="#home">Home</a></li>
+    <li><a href="#menu">Menu</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <button class="cta-btn">Order Now</button>
+</nav>
 
-  <!-- Navigation -->
-  <nav class="nav">
-    <div class="logo">
-      <span class="logo-icon">&#9749;</span>
-      <span>Brew Haven</span>
-    </div>
-    <ul class="nav-links">
-      <li><a href="#home">Home</a></li>
-      <li><a href="#menu">Menu</a></li>
-      <li><a href="#about">About</a></li>
-      <li><a href="#contact">Contact</a></li>
-    </ul>
-    <button class="cta-btn">Order Now</button>
-  </nav>
-
-  <!-- Hero Intro -->
-  <section id="home" class="hero-intro">
+<!-- ==================== HERO ==================== -->
+<section id="home" class="hero">
+  <!-- LEFT: text + CTAs + stats -->
+  <div class="hero-text">
     <p class="eyebrow">Freshly Roasted Daily</p>
-    <h1>Crafted with <span class="accent">Passion</span>,<br />Served with <span class="accent">Love</span></h1>
+    <h1>
+      Crafted with <span class="accent">passion</span>,<br />
+      Served with <span class="accent">love</span>
+    </h1>
     <p class="lead">
       Every cup at Brew Haven tells a story &mdash; carefully sourced beans,
-      expertly roasted, lovingly served. Pick a brew below and watch it come
-      to life.
+      expertly roasted in small batches, and lovingly served by our award-winning
+      baristas. Pick a brew on the right and watch it come to life.
     </p>
     <div class="hero-cta">
       <button class="cta-btn primary">Explore Menu</button>
       <button class="cta-btn ghost">Watch Story</button>
     </div>
-  </section>
-
-  <!-- Showcase: 3D scene with slider directly underneath -->
-  <section class="showcase" id="menu">
-    <div class="showcase-3d">
-      <div id="canvas-wrap">
-        <canvas id="coffee-canvas"></canvas>
-      </div>
-      <div class="canvas-hint">
-        <span class="dot"></span>
-        <span>Drag to rotate &middot; Pick a coffee below</span>
-        <span class="dot"></span>
-      </div>
-      <div class="current-coffee">
-        <h3 id="coffee-name">Espresso</h3>
-        <p id="coffee-desc">A small but mighty 30ml shot. Thick crema, intense aroma, chocolatey body.</p>
-        <span id="coffee-price">$3.50</span>
-      </div>
+    <div class="stats">
+      <div><strong>15+</strong><span>Coffee Blends</span></div>
+      <div><strong>50k</strong><span>Happy Customers</span></div>
+      <div><strong>10yr</strong><span>Of Roasting</span></div>
     </div>
-
-    <div class="section-head">
-      <p class="eyebrow">Our Signature Drinks</p>
-      <h2>Choose Your <span class="accent">Brew</span></h2>
-    </div>
-
-    <div class="slider-wrap">
-      <button class="slider-arrow prev" aria-label="Previous coffee">&#8249;</button>
-      <div class="slider" id="slider"><!-- cards injected --></div>
-      <button class="slider-arrow next" aria-label="Next coffee">&#8250;</button>
-    </div>
-    <div class="slider-dots" id="slider-dots"></div>
-  </section>
-
-  <!-- Stats band -->
-  <div class="stats-band">
-    <div><strong>15+</strong><span>Coffee Blends</span></div>
-    <div><strong>50k</strong><span>Happy Customers</span></div>
-    <div><strong>10yr</strong><span>Of Roasting</span></div>
-    <div><strong>3</strong><span>Origin Countries</span></div>
   </div>
 
-  <!-- About -->
-  <section id="about" class="about">
-    <div class="about-grid">
-      <div class="about-text">
-        <p class="eyebrow">Our Story</p>
-        <h2>Where Every Bean Has a <span class="accent">Journey</span></h2>
-        <p>
-          From the misty highlands of Ethiopia to the volcanic soils of
-          Colombia, we travel the world to find the most exquisite beans.
-          Each batch is roasted in small quantities to preserve its unique
-          character, and pulled fresh into every cup.
-        </p>
-        <ul class="features">
-          <li>
-            <span class="feat-icon">&#127807;</span>
-            <div>
-              <h4>Ethically Sourced</h4>
-              <p>Direct trade with farmers who care.</p>
-            </div>
-          </li>
-          <li>
-            <span class="feat-icon">&#128293;</span>
-            <div>
-              <h4>Small Batch Roasted</h4>
-              <p>Roasted to order for peak freshness.</p>
-            </div>
-          </li>
-          <li>
-            <span class="feat-icon">&#128118;</span>
-            <div>
-              <h4>Crafted by Experts</h4>
-              <p>Award-winning baristas at your service.</p>
-            </div>
-          </li>
-        </ul>
-      </div>
-      <div class="about-visual">
-        <img
-          src="https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=900&q=80"
-          alt="Coffee beans being roasted"
-        />
-        <div class="badge">
-          <span class="num">10+</span>
-          <span class="lbl">Years of<br/>Craft</span>
-        </div>
-      </div>
+  <!-- RIGHT: 3D + label + slider -->
+  <div class="hero-right">
+    <div id="canvas-wrap">
+      <canvas id="coffee-canvas"></canvas>
     </div>
-  </section>
-
-  <!-- Contact -->
-  <section id="contact" class="contact">
-    <div class="section-head">
-      <p class="eyebrow">Visit Us</p>
-      <h2>Come Brew With <span class="accent">Us</span></h2>
+    <div class="current-coffee">
+      <h3 id="coffee-name">Espresso</h3>
+      <p id="coffee-desc">A small but mighty 30ml shot &mdash; bold, intense, with a thick golden crema.</p>
     </div>
-    <div class="contact-grid">
-      <div class="contact-card">
-        <span class="contact-icon">&#128205;</span>
-        <h4>Location</h4>
-        <p>123 Aroma Street<br />Coffee District, CD 10101</p>
-      </div>
-      <div class="contact-card">
-        <span class="contact-icon">&#9200;</span>
-        <h4>Hours</h4>
-        <p>Mon&ndash;Fri: 7am &ndash; 9pm<br />Sat&ndash;Sun: 8am &ndash; 10pm</p>
-      </div>
-      <div class="contact-card">
-        <span class="contact-icon">&#128222;</span>
-        <h4>Contact</h4>
-        <p>+1 (555) 123-4567<br />hello@brewhaven.cafe</p>
-      </div>
+    <div class="slider-wrap">
+      <button class="slider-arrow prev" aria-label="Previous coffee">&#8249;</button>
+      <div class="slider" id="slider"><!-- cards injected by JS --></div>
+      <button class="slider-arrow next" aria-label="Next coffee">&#8250;</button>
     </div>
-  </section>
+  </div>
+</section>
 
-  <footer class="footer">
-    <p>&copy; 2026 Brew Haven. Crafted with love and caffeine.</p>
-  </footer>
+<!-- ==================== MENU GRID ==================== -->
+<section id="menu" class="menu-section">
+  <div class="section-head">
+    <p class="eyebrow">Our Full Menu</p>
+    <h2>Handpicked <span class="accent">Favorites</span></h2>
+    <p class="lead">Six signature drinks that define our craft.</p>
+  </div>
+  <div class="menu-grid" id="menu-grid"><!-- injected --></div>
+</section>
 
-  <!-- Three.js -->
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script src="script.js"></script>
+<!-- ==================== FOOTER ==================== -->
+<footer class="footer" id="contact">
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="logo">
+        <span class="logo-icon">&#9749;</span>
+        <span>Brew Haven</span>
+      </div>
+      <p>
+        Artisan coffee, freshly roasted in small batches.
+        Crafted with passion, served with love &mdash; one cup at a time.
+      </p>
+    </div>
+    <div class="footer-col">
+      <h5>Visit</h5>
+      <ul>
+        <li><a href="#">123 Aroma Street</a></li>
+        <li><a href="#">Coffee District</a></li>
+        <li><a href="#">CD 10101</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Hours</h5>
+      <ul>
+        <li><a href="#">Mon&ndash;Fri: 7am&ndash;9pm</a></li>
+        <li><a href="#">Sat&ndash;Sun: 8am&ndash;10pm</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Connect</h5>
+      <ul>
+        <li><a href="#">Instagram</a></li>
+        <li><a href="#">Facebook</a></li>
+        <li><a href="#">hello@brewhaven.cafe</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    &copy; 2026 Brew Haven. Crafted with love and caffeine.
+  </div>
+</footer>
+
+<!-- Three.js (cdnjs) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+/* =================================================================
+   COFFEE TYPES (5 for slider)
+   Each defines a full color palette so we can lerp materials.
+================================================================== */
+const COFFEES = [
+  {
+    id: 'espresso',
+    name: 'Espresso',
+    desc: 'A small but mighty 30ml shot \u2014 bold, intense, with a thick golden crema.',
+    short: 'Bold and intense.',
+    tag: 'Strong',
+    img: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=220&q=80&fit=crop',
+    liquidColor: 0x2a1306,
+    foamColor:   0xa86b3a,
+    foamThickness: 0.05,
+    steamOpacity:  0.45,
+    steamColor:    0xfff0d8,
+    cupTint:       0xf6f1e6,
+  },
+  {
+    id: 'latte',
+    name: 'Caff\u00e8 Latte',
+    desc: 'Smooth espresso layered with steamed milk and a kiss of velvety microfoam.',
+    short: 'Smooth and creamy.',
+    tag: 'Mild',
+    img: 'https://images.unsplash.com/photo-1561047029-3000c68339ca?w=220&q=80&fit=crop',
+    liquidColor: 0xc59870,
+    foamColor:   0xfff5e0,
+    foamThickness: 0.18,
+    steamOpacity:  0.5,
+    steamColor:    0xffffff,
+    cupTint:       0xfaf6ec,
+  },
+  {
+    id: 'cappuccino',
+    name: 'Cappuccino',
+    desc: 'Equal parts espresso, steamed milk, and thick velvety foam dusted with cocoa.',
+    short: 'Foamy and balanced.',
+    tag: 'Classic',
+    img: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=220&q=80&fit=crop',
+    liquidColor: 0x8a5e3e,
+    foamColor:   0xfff2dc,
+    foamThickness: 0.32,
+    steamOpacity:  0.6,
+    steamColor:    0xfff8ee,
+    cupTint:       0xf8f2e6,
+  },
+  {
+    id: 'mocha',
+    name: 'Mocha',
+    desc: 'Espresso, dark chocolate, and steamed milk with a swirl of cocoa-dusted cream.',
+    short: 'Chocolate indulgence.',
+    tag: 'Sweet',
+    img: 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=220&q=80&fit=crop',
+    liquidColor: 0x3d1e0e,
+    foamColor:   0xe8c896,
+    foamThickness: 0.25,
+    steamOpacity:  0.55,
+    steamColor:    0xffe4c0,
+    cupTint:       0xfff0d8,
+  },
+  {
+    id: 'americano',
+    name: 'Americano',
+    desc: 'A double shot of espresso pulled long with hot water for a smooth, mellow body.',
+    short: 'Smooth and light.',
+    tag: 'Long',
+    img: 'https://images.unsplash.com/photo-1521302080334-4bebac2763a6?w=220&q=80&fit=crop',
+    liquidColor: 0x40200d,
+    foamColor:   0x6b3a1e,
+    foamThickness: 0.06,
+    steamOpacity:  0.55,
+    steamColor:    0xffe8c8,
+    cupTint:       0xffffff,
+  },
+];
+
+/* Extra menu-grid items (uses 5 + 1 extra) */
+const MENU = [
+  { name: 'Espresso',   desc: 'A 30ml shot, intense and chocolatey.', price: '$3.50',
+    img: 'https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=600&q=80&fit=crop' },
+  { name: 'Caff\u00e8 Latte', desc: 'Steamed milk with a thin layer of microfoam.', price: '$5.00',
+    img: 'https://images.unsplash.com/photo-1561047029-3000c68339ca?w=600&q=80&fit=crop' },
+  { name: 'Cappuccino', desc: 'Espresso, milk and a dome of velvet foam.', price: '$4.50',
+    img: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=600&q=80&fit=crop' },
+  { name: 'Mocha',      desc: 'Espresso meets dark chocolate, topped with cream.', price: '$5.50',
+    img: 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=600&q=80&fit=crop' },
+  { name: 'Americano',  desc: 'Double shot lengthened with hot water.', price: '$4.00',
+    img: 'https://images.unsplash.com/photo-1521302080334-4bebac2763a6?w=600&q=80&fit=crop' },
+  { name: 'Flat White', desc: 'Double ristretto with silky microfoam.', price: '$4.75',
+    img: 'https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=600&q=80&fit=crop' },
+];
+
+/* =================================================================
+   3D COFFEE SCENE
+================================================================== */
+const CoffeeScene = (() => {
+  let scene, camera, renderer, canvas;
+  let cupGroup;          // floats / parallax-rotates
+  let cupBody, liquid, foam, handle;
+  let liquidMat, foamMat, cupMat;
+  let steamSprites = [];
+  let steamMaterials = [];
+  let mouseX = 0, mouseY = 0;
+  let curRotY = 0, curRotX = 0;
+
+  // current animated material values (lerped over 60 frames)
+  let lerping = false;
+  let lerpFrame = 0;
+  const LERP_FRAMES = 60;
+  const fromVals = {
+    liquid: new THREE.Color(),
+    foam: new THREE.Color(),
+    cup: new THREE.Color(),
+    steam: new THREE.Color(),
+    foamThickness: 0,
+    steamOpacity: 0,
+  };
+  const toVals = {
+    liquid: new THREE.Color(),
+    foam: new THREE.Color(),
+    cup: new THREE.Color(),
+    steam: new THREE.Color(),
+    foamThickness: 0,
+    steamOpacity: 0,
+  };
+  const liveVals = {
+    liquid: new THREE.Color(),
+    foam: new THREE.Color(),
+    cup: new THREE.Color(),
+    steam: new THREE.Color(),
+    foamThickness: 0,
+    steamOpacity: 0,
+  };
+
+  /* ---------- radial gradient steam texture ---------- */
+  function makeSteamTexture() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+    g.addColorStop(0,   'rgba(255,255,255,0.85)');
+    g.addColorStop(0.3, 'rgba(255,255,255,0.45)');
+    g.addColorStop(0.6, 'rgba(255,255,255,0.18)');
+    g.addColorStop(1,   'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 128, 128);
+    return new THREE.CanvasTexture(c);
+  }
+
+  /* ---------- subtle ceramic noise normal map ---------- */
+  function makeCeramicNormal() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const ctx = c.getContext('2d');
+    const img = ctx.createImageData(256, 256);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const n = 128 + (Math.random() - 0.5) * 6;
+      img.data[i]     = n;
+      img.data[i + 1] = n;
+      img.data[i + 2] = 255;
+      img.data[i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(2, 2);
+    return t;
+  }
+
+  /* ---------- ceramic cup profile via LatheGeometry ----------
+     Curved body, foot ring at bottom, flared rim at top.
+  ---------------------------------------------------------------- */
+  function buildCupGeometry() {
+    const pts = [];
+    // Foot ring (slightly wider base for stability)
+    pts.push(new THREE.Vector2(0.62, 0));      // foot outer edge
+    pts.push(new THREE.Vector2(0.66, 0.04));   // foot lip up
+    pts.push(new THREE.Vector2(0.58, 0.08));   // tuck inward (foot ring)
+    pts.push(new THREE.Vector2(0.60, 0.14));   // back out into body
+    // Curved body
+    pts.push(new THREE.Vector2(0.66, 0.30));
+    pts.push(new THREE.Vector2(0.72, 0.50));
+    pts.push(new THREE.Vector2(0.76, 0.70));
+    pts.push(new THREE.Vector2(0.78, 0.90));
+    // Flared rim
+    pts.push(new THREE.Vector2(0.83, 1.00));
+    pts.push(new THREE.Vector2(0.84, 1.03));
+    pts.push(new THREE.Vector2(0.82, 1.04));
+    return new THREE.LatheGeometry(pts, 96);
+  }
+
+  /* ---------- handle: TubeGeometry along a cubic bezier ---------- */
+  function buildHandle() {
+    // three.js doesn't expose CubicBezierCurve3 in some r128 builds
+    // CatmullRomCurve3 with bezier-style control points works the same shape.
+    const cy = 0.55;
+    const start = new THREE.Vector3(0.78, cy + 0.22, 0);
+    const ctrl1 = new THREE.Vector3(1.30, cy + 0.30, 0);
+    const ctrl2 = new THREE.Vector3(1.30, cy - 0.30, 0);
+    const end   = new THREE.Vector3(0.78, cy - 0.22, 0);
+    const curve = new THREE.CubicBezierCurve3(start, ctrl1, ctrl2, end);
+    return new THREE.TubeGeometry(curve, 64, 0.05, 16, false);
+  }
+
+  /* ---------- INIT ---------- */
+  function init() {
+    canvas = document.getElementById('coffee-canvas');
+    if (!canvas) return;
+    const wrap = document.getElementById('canvas-wrap');
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+
+    scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x1a0c06, 6, 16);
+
+    camera = new THREE.PerspectiveCamera(35, w / h, 0.1, 100);
+    camera.position.set(0, 1.4, 4.6);
+    camera.lookAt(0, 0.55, 0);
+
+    renderer = new THREE.WebGLRenderer({
+      canvas, antialias: true, alpha: true,
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(w, h, false);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    if (renderer.outputEncoding !== undefined) {
+      renderer.outputEncoding = THREE.sRGBEncoding;
+    }
+    if (renderer.toneMapping !== undefined) {
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.05;
+    }
+
+    /* ---------- LIGHTS (Hemisphere + Directional key + rim + Point) ---------- */
+    const hemi = new THREE.HemisphereLight(0xffe4cc, 0x2a1810, 0.45);
+    scene.add(hemi);
+
+    // Key light (warm, top-front)
+    const key = new THREE.DirectionalLight(0xffe1b5, 1.4);
+    key.position.set(3, 5, 4);
+    key.castShadow = true;
+    key.shadow.mapSize.set(1024, 1024);
+    key.shadow.camera.left = -3;
+    key.shadow.camera.right = 3;
+    key.shadow.camera.top = 3;
+    key.shadow.camera.bottom = -3;
+    key.shadow.bias = -0.0005;
+    scene.add(key);
+
+    // Rim light (cool kiss from behind)
+    const rim = new THREE.DirectionalLight(0x88aaff, 0.6);
+    rim.position.set(-3, 2.5, -3);
+    scene.add(rim);
+
+    // Point light fill (warm)
+    const pt = new THREE.PointLight(0xffaa66, 0.7, 7);
+    pt.position.set(0.5, 1.6, 2.2);
+    scene.add(pt);
+
+    /* ---------- TABLE (catches shadow) ---------- */
+    const tableGeo = new THREE.CircleGeometry(4, 64);
+    const tableMat = new THREE.MeshStandardMaterial({
+      color: 0x3a2418,
+      roughness: 0.85,
+      metalness: 0.05,
+    });
+    const table = new THREE.Mesh(tableGeo, tableMat);
+    table.rotation.x = -Math.PI / 2;
+    table.position.y = -0.05;
+    table.receiveShadow = true;
+    scene.add(table);
+
+    /* ---------- CUP GROUP (floats + parallax) ---------- */
+    cupGroup = new THREE.Group();
+    cupGroup.position.y = 0;
+    scene.add(cupGroup);
+
+    // SAUCER (lathe profile)
+    const sPts = [
+      new THREE.Vector2(0.0,  0.00),
+      new THREE.Vector2(0.30, 0.005),
+      new THREE.Vector2(0.65, 0.012),
+      new THREE.Vector2(1.00, 0.030),
+      new THREE.Vector2(1.20, 0.060),
+      new THREE.Vector2(1.18, 0.075),
+      new THREE.Vector2(1.05, 0.075),
+    ];
+    const saucerGeo = new THREE.LatheGeometry(sPts, 96);
+    const saucerMat = new THREE.MeshStandardMaterial({
+      color: 0xf5f0e6,
+      roughness: 0.32,
+      metalness: 0.08,
+      normalMap: makeCeramicNormal(),
+      normalScale: new THREE.Vector2(0.04, 0.04),
+    });
+    const saucer = new THREE.Mesh(saucerGeo, saucerMat);
+    saucer.position.y = -0.05;
+    saucer.castShadow = true;
+    saucer.receiveShadow = true;
+    cupGroup.add(saucer);
+
+    // CUP BODY
+    cupMat = new THREE.MeshStandardMaterial({
+      color: COFFEES[0].cupTint,
+      roughness: 0.22,
+      metalness: 0.07,
+      normalMap: makeCeramicNormal(),
+      normalScale: new THREE.Vector2(0.05, 0.05),
+      side: THREE.DoubleSide,
+    });
+    cupBody = new THREE.Mesh(buildCupGeometry(), cupMat);
+    cupBody.castShadow = true;
+    cupBody.receiveShadow = true;
+    cupGroup.add(cupBody);
+
+    // BOTTOM CAP (so light doesn't bleed through cup interior)
+    const bottomGeo = new THREE.CircleGeometry(0.6, 64);
+    const bottom = new THREE.Mesh(bottomGeo, cupMat);
+    bottom.rotation.x = -Math.PI / 2;
+    bottom.position.y = 0.06;
+    cupGroup.add(bottom);
+
+    // HANDLE (tube along bezier)
+    handle = new THREE.Mesh(buildHandle(), cupMat);
+    handle.castShadow = true;
+    handle.receiveShadow = true;
+    cupGroup.add(handle);
+
+    // LIQUID surface disc (glossy, low roughness)
+    const liquidGeo = new THREE.CircleGeometry(0.74, 96);
+    liquidMat = new THREE.MeshStandardMaterial({
+      color: COFFEES[0].liquidColor,
+      roughness: 0.05,
+      metalness: 0.2,
+      emissive: 0x1a0a04,
+      emissiveIntensity: 0.18,
+    });
+    liquid = new THREE.Mesh(liquidGeo, liquidMat);
+    liquid.rotation.x = -Math.PI / 2;
+    liquid.position.y = 0.93;
+    cupGroup.add(liquid);
+
+    // FOAM cylinder layer on top
+    const foamGeo = new THREE.CylinderGeometry(0.74, 0.74, 1, 64);
+    foamMat = new THREE.MeshStandardMaterial({
+      color: COFFEES[0].foamColor,
+      roughness: 0.85,
+      metalness: 0.0,
+    });
+    foam = new THREE.Mesh(foamGeo, foamMat);
+    foam.scale.y = COFFEES[0].foamThickness;
+    foam.position.y = 0.93 + (COFFEES[0].foamThickness * 0.5);
+    foam.castShadow = true;
+    cupGroup.add(foam);
+
+    /* ---------- STEAM SPRITES ---------- */
+    const steamTex = makeSteamTexture();
+    const STEAM_COUNT = 14;
+    for (let i = 0; i < STEAM_COUNT; i++) {
+      const mat = new THREE.SpriteMaterial({
+        map: steamTex,
+        color: COFFEES[0].steamColor,
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+      const s = new THREE.Sprite(mat);
+      s.scale.set(0.5, 0.5, 1);
+      s.userData = {
+        seed: Math.random(),
+        wob: Math.random() * Math.PI * 2,
+        wobSpeed: 0.5 + Math.random() * 1.5,
+      };
+      cupGroup.add(s);
+      steamSprites.push(s);
+      steamMaterials.push(mat);
+    }
+
+    /* ---------- INIT live values ---------- */
+    liveVals.liquid.set(COFFEES[0].liquidColor);
+    liveVals.foam.set(COFFEES[0].foamColor);
+    liveVals.cup.set(COFFEES[0].cupTint);
+    liveVals.steam.set(COFFEES[0].steamColor);
+    liveVals.foamThickness = COFFEES[0].foamThickness;
+    liveVals.steamOpacity = COFFEES[0].steamOpacity;
+
+    /* ---------- INTERACTION: mouse parallax ---------- */
+    window.addEventListener('mousemove', (e) => {
+      const r = wrap.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      mouseX = (e.clientX - cx) / window.innerWidth;
+      mouseY = (e.clientY - cy) / window.innerHeight;
+    });
+    // touch
+    window.addEventListener('touchmove', (e) => {
+      if (!e.touches.length) return;
+      const t = e.touches[0];
+      const r = wrap.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      mouseX = (t.clientX - cx) / window.innerWidth;
+      mouseY = (t.clientY - cy) / window.innerHeight;
+    }, { passive: true });
+
+    window.addEventListener('resize', onResize);
+    onResize();
+    animate();
+  }
+
+  function onResize() {
+    if (!renderer) return;
+    const wrap = document.getElementById('canvas-wrap');
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+
+  function lerpNum(a, b, t) { return a + (b - a) * t; }
+  function easeInOut(t) { return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const t = performance.now() * 0.001;
+
+    /* ----- LERP material values over 60 frames ----- */
+    if (lerping) {
+      lerpFrame++;
+      const k = easeInOut(Math.min(lerpFrame / LERP_FRAMES, 1));
+      liveVals.liquid.copy(fromVals.liquid).lerp(toVals.liquid, k);
+      liveVals.foam.copy(fromVals.foam).lerp(toVals.foam, k);
+      liveVals.cup.copy(fromVals.cup).lerp(toVals.cup, k);
+      liveVals.steam.copy(fromVals.steam).lerp(toVals.steam, k);
+      liveVals.foamThickness = lerpNum(fromVals.foamThickness, toVals.foamThickness, k);
+      liveVals.steamOpacity  = lerpNum(fromVals.steamOpacity,  toVals.steamOpacity,  k);
+      if (lerpFrame >= LERP_FRAMES) lerping = false;
+    }
+
+    // apply to materials
+    liquidMat.color.copy(liveVals.liquid);
+    foamMat.color.copy(liveVals.foam);
+    cupMat.color.copy(liveVals.cup);
+    foam.scale.y = Math.max(liveVals.foamThickness, 0.005);
+    foam.position.y = 0.93 + (liveVals.foamThickness * 0.5);
+
+    /* ----- floating bob + mouse-parallax rotation ----- */
+    const targetRotY = mouseX * 0.6;
+    const targetRotX = -mouseY * 0.4;
+    curRotY = lerpNum(curRotY, targetRotY, 0.06);
+    curRotX = lerpNum(curRotX, targetRotX, 0.06);
+    cupGroup.rotation.y = curRotY + Math.sin(t * 0.4) * 0.05;
+    cupGroup.rotation.x = curRotX;
+    cupGroup.position.y = Math.sin(t * 1.2) * 0.04;
+
+    /* ----- steam: drift up, fade in/out ----- */
+    steamSprites.forEach((s, i) => {
+      const u = s.userData;
+      // 3 second life cycle, staggered per sprite
+      const lifeT = ((t * 0.5) + u.seed * 4) % 3;
+      const life = lifeT / 3;
+      const a = u.seed * Math.PI * 2 + t * 0.3;
+      const r = 0.05 + life * 0.35;
+      s.position.x = Math.cos(a) * r + Math.sin(t * u.wobSpeed + u.wob) * 0.05;
+      s.position.z = Math.sin(a) * r + Math.cos(t * u.wobSpeed + u.wob) * 0.05;
+      s.position.y = 0.93 + liveVals.foamThickness + 0.15 + life * 1.4;
+      const sc = 0.25 + life * 0.95;
+      s.scale.set(sc, sc, 1);
+      const fade = Math.sin(life * Math.PI);
+      const m = steamMaterials[i];
+      m.opacity = Math.max(0, fade * liveVals.steamOpacity);
+      m.color.copy(liveVals.steam);
+    });
+
+    renderer.render(scene, camera);
+  }
+
+  /* ---------- public: switch to coffee, lerp 60 frames ---------- */
+  function setCoffee(coffee) {
+    fromVals.liquid.copy(liveVals.liquid);
+    fromVals.foam.copy(liveVals.foam);
+    fromVals.cup.copy(liveVals.cup);
+    fromVals.steam.copy(liveVals.steam);
+    fromVals.foamThickness = liveVals.foamThickness;
+    fromVals.steamOpacity  = liveVals.steamOpacity;
+
+    toVals.liquid.set(coffee.liquidColor);
+    toVals.foam.set(coffee.foamColor);
+    toVals.cup.set(coffee.cupTint);
+    toVals.steam.set(coffee.steamColor);
+    toVals.foamThickness = coffee.foamThickness;
+    toVals.steamOpacity  = coffee.steamOpacity;
+
+    lerpFrame = 0;
+    lerping = true;
+  }
+
+  return { init, setCoffee };
+})();
+
+/* =================================================================
+   SLIDER + MENU GRID
+================================================================== */
+const Slider = (() => {
+  const sliderEl = document.getElementById('slider');
+  const prevBtn = document.querySelector('.slider-arrow.prev');
+  const nextBtn = document.querySelector('.slider-arrow.next');
+  const nameEl = document.getElementById('coffee-name');
+  const descEl = document.getElementById('coffee-desc');
+  const currentBox = document.querySelector('.current-coffee');
+  let active = 0;
+
+  function build() {
+    COFFEES.forEach((c, i) => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'coffee-card' + (i === 0 ? ' active' : '');
+      card.innerHTML =
+        '<div class="card-img"><img src="' + c.img + '" alt="' + c.name + '" loading="lazy" /></div>' +
+        '<div class="card-body">' +
+          '<h3>' + c.name + '</h3>' +
+          '<p>' + c.short + '</p>' +
+          '<span class="tag">' + c.tag + '</span>' +
+        '</div>';
+      card.addEventListener('click', () => select(i, true));
+      sliderEl.appendChild(card);
+    });
+
+    prevBtn.addEventListener('click', () =>
+      select((active - 1 + COFFEES.length) % COFFEES.length, true));
+    nextBtn.addEventListener('click', () =>
+      select((active + 1) % COFFEES.length, true));
+
+    document.addEventListener('keydown', (e) => {
+      if (e.target.closest('input, textarea, button')) return;
+      if (e.key === 'ArrowLeft') prevBtn.click();
+      if (e.key === 'ArrowRight') nextBtn.click();
+    });
+
+    // set initial label
+    nameEl.textContent = COFFEES[0].name;
+    descEl.textContent = COFFEES[0].desc;
+  }
+
+  function select(i, scrollInto) {
+    active = i;
+    const cards = sliderEl.querySelectorAll('.coffee-card');
+    cards.forEach((c, idx) => c.classList.toggle('active', idx === i));
+    if (scrollInto) {
+      cards[i].scrollIntoView({
+        behavior: 'smooth', inline: 'center', block: 'nearest',
+      });
+    }
+    // fade + slide animation on label
+    currentBox.classList.remove('changing');
+    void currentBox.offsetWidth;
+    currentBox.classList.add('changing');
+    setTimeout(() => {
+      nameEl.textContent = COFFEES[i].name;
+      descEl.textContent = COFFEES[i].desc;
+    }, 220);
+
+    CoffeeScene.setCoffee(COFFEES[i]);
+  }
+
+  return { build };
+})();
+
+/* ---------- 6-item menu grid ---------- */
+function buildMenuGrid() {
+  const grid = document.getElementById('menu-grid');
+  MENU.forEach((m) => {
+    const item = document.createElement('div');
+    item.className = 'menu-item';
+    item.innerHTML =
+      '<div class="menu-item-img"><img src="' + m.img + '" alt="' + m.name + '" loading="lazy" /></div>' +
+      '<div class="menu-item-body">' +
+        '<h4>' + m.name + '</h4>' +
+        '<p>' + m.desc + '</p>' +
+        '<div class="menu-item-foot">' +
+          '<span class="price">' + m.price + '</span>' +
+          '<button class="add" aria-label="Add to order">+</button>' +
+        '</div>' +
+      '</div>';
+    grid.appendChild(item);
+  });
+}
+
+/* ---------- BOOT ---------- */
+window.addEventListener('DOMContentLoaded', () => {
+  Slider.build();
+  buildMenuGrid();
+  CoffeeScene.init();
+});
+</script>
+
 </body>
 </html>
