@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brew Haven — Artisan Coffee Shop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700;900&family=Poppins:wght@300;400;500;600&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Steam particles background -->
+  <div class="steam-bg">
+    <span></span><span></span><span></span><span></span><span></span>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="logo">
+      <span class="logo-icon">&#9749;</span>
+      <span>Brew Haven</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#home">Home</a></li>
+      <li><a href="#menu">Menu</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <button class="cta-btn">Order Now</button>
+  </nav>
+
+  <!-- Hero Section with 3D Canvas -->
+  <section id="home" class="hero">
+    <div class="hero-text">
+      <p class="eyebrow">Freshly Roasted Daily</p>
+      <h1>
+        Crafted with <span class="accent">Passion</span>,<br />
+        Served with <span class="accent">Love</span>
+      </h1>
+      <p class="lead">
+        Discover the perfect blend at Brew Haven — where every cup tells a
+        story of carefully sourced beans, expert roasting, and warm hospitality.
+      </p>
+      <div class="hero-cta">
+        <button class="cta-btn primary">Explore Menu</button>
+        <button class="cta-btn ghost">Watch Story</button>
+      </div>
+      <div class="stats">
+        <div><strong>15+</strong><span>Coffee Blends</span></div>
+        <div><strong>50k</strong><span>Happy Customers</span></div>
+        <div><strong>10yr</strong><span>Of Roasting</span></div>
+      </div>
+    </div>
+
+    <div class="hero-3d">
+      <div id="canvas-wrap">
+        <canvas id="coffee-canvas"></canvas>
+        <div class="loading-ring"><span></span></div>
+      </div>
+      <div class="current-coffee">
+        <h3 id="coffee-name">Espresso</h3>
+        <p id="coffee-desc">Bold, rich, intense — a classic Italian shot.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Coffee Type Slider -->
+  <section id="menu" class="slider-section">
+    <div class="section-head">
+      <p class="eyebrow">Our Signature Drinks</p>
+      <h2>Choose Your <span class="accent">Brew</span></h2>
+      <p class="lead">Click a coffee type to see it come to life in 3D.</p>
+    </div>
+
+    <div class="slider-wrap">
+      <button class="slider-arrow prev" aria-label="Previous">&#8249;</button>
+
+      <div class="slider" id="slider">
+        <!-- Cards injected by JS -->
+      </div>
+
+      <button class="slider-arrow next" aria-label="Next">&#8250;</button>
+    </div>
+
+    <div class="slider-dots" id="slider-dots"></div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="about">
+    <div class="about-grid">
+      <div class="about-text">
+        <p class="eyebrow">Our Story</p>
+        <h2>Where Every Bean Has a <span class="accent">Journey</span></h2>
+        <p>
+          From the misty hills of Ethiopia to the volcanic soils of Colombia,
+          we travel the world to find the most exquisite beans. Each batch is
+          roasted in small quantities to preserve its unique character.
+        </p>
+        <ul class="features">
+          <li>
+            <span class="feat-icon">&#127807;</span>
+            <div>
+              <h4>Ethically Sourced</h4>
+              <p>Direct trade with farmers who care.</p>
+            </div>
+          </li>
+          <li>
+            <span class="feat-icon">&#128293;</span>
+            <div>
+              <h4>Small Batch Roasted</h4>
+              <p>Roasted to order for peak freshness.</p>
+            </div>
+          </li>
+          <li>
+            <span class="feat-icon">&#128118;</span>
+            <div>
+              <h4>Crafted by Experts</h4>
+              <p>Award-winning baristas at your service.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div class="about-visual">
+        <div class="bean-stack">
+          <div class="bean b1"></div>
+          <div class="bean b2"></div>
+          <div class="bean b3"></div>
+          <div class="bean b4"></div>
+          <div class="bean b5"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="contact">
+    <div class="section-head">
+      <p class="eyebrow">Visit Us</p>
+      <h2>Come Brew With <span class="accent">Us</span></h2>
+    </div>
+    <div class="contact-grid">
+      <div class="contact-card">
+        <span class="contact-icon">&#128205;</span>
+        <h4>Location</h4>
+        <p>123 Aroma Street<br />Coffee District, CD 10101</p>
+      </div>
+      <div class="contact-card">
+        <span class="contact-icon">&#9200;</span>
+        <h4>Hours</h4>
+        <p>Mon-Fri: 7am - 9pm<br />Sat-Sun: 8am - 10pm</p>
+      </div>
+      <div class="contact-card">
+        <span class="contact-icon">&#128222;</span>
+        <h4>Contact</h4>
+        <p>+1 (555) 123-4567<br />hello@brewhaven.cafe</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>&copy; 2026 Brew Haven. Crafted with love and caffeine.</p>
+  </footer>
+
+  <!-- Three.js -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
